@@ -10,6 +10,7 @@
  * ]
  */
 
+
 const books = [];
 let filteredBookshelf = [];
 const RENDER_EVENT = 'render-book';
@@ -79,9 +80,17 @@ function makeBook(bookObject) {
     trashButton.classList.add('red');
     trashButton.innerText = "Hapus buku";
     trashButton.addEventListener('click', function () {
-      removeBook(id);
+      addRemoveAlert(id, title);
     });
-    container.append(uncompleteButton, trashButton);
+
+    const editButton = document.createElement('button');
+    editButton.classList.add('edit');
+    editButton.innerText = "Edit buku";
+    editButton.addEventListener('click', function () {
+      addEditAlert(id);
+    });
+
+    container.append(uncompleteButton, trashButton, editButton);
 
   } else {
     const completeButton = document.createElement('button');
@@ -95,9 +104,17 @@ function makeBook(bookObject) {
     trashButton.classList.add('red');
     trashButton.innerText = "Hapus buku";
     trashButton.addEventListener('click', function () {
-      removeBook(id);
+      addRemoveAlert(id, title);
     });
-    container.append(completeButton, trashButton);
+
+    const editButton = document.createElement('button');
+    editButton.classList.add('edit');
+    editButton.innerText = "Edit buku";
+    editButton.addEventListener('click', function () {
+      addEditAlert(id);
+    });
+
+    container.append(completeButton, trashButton, editButton);
   }
   return textContainer;
 }
@@ -109,7 +126,7 @@ function addBook() {
   const isComplete = document.getElementById('inputBookIsComplete').checked;
 
   const generatedID = generateId();
-  const bookObject = generateBookObject(generatedID, title, author, year, isComplete)
+  const bookObject = generateBookObject(generatedID, title, author, year, isComplete);
   books.unshift(bookObject);
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
@@ -120,16 +137,6 @@ function addBookToCompleted(bookId) {
   if (!bookTarget) return;
 
   bookTarget.isComplete = true;
-  document.dispatchEvent(new Event(RENDER_EVENT));
-
-  saveData();
-}
-
-function removeBook(bookId) {
-  const bookTarget = books.findIndex((book) => book.id === bookId);
-  if (bookTarget === -1) return;
-
-  books.splice(bookTarget, 1);
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
 }
@@ -142,6 +149,77 @@ function addBookToUncompleted(bookId) {
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
 }
+
+function removeBook(bookId) {
+  const bookTarget = books.findIndex((book) => book.id === bookId);
+  if (bookTarget === -1) return;
+
+  books.splice(bookTarget, 1);
+  document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
+}
+
+function addRemoveAlert(id, title) {
+  Swal.fire({
+    title: "Ingin menghapus?",
+    text: "Buku yang dihapus tidak akan kembali",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Iya, hapus!",
+    cancelButtonText: "Tidak jadi",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Terhapus!",
+        text: "Buku " + title + " terhapus",
+        icon: "success",
+        showConfirmButton: false,
+        timer: 1500
+      });
+      removeBook(id);
+    }
+  });
+}
+
+//Rawan XSS Attack, perlu di sanitize in the future
+async function addEditAlert(id) {
+  const bookTarget = books.find((book) => book.id === id);
+  const { value: formValues } = await Swal.fire({
+    title: "Edit Buku",
+    html: `
+      <style>
+      p {
+        margin-bottom : -12px;
+      }
+      </style>
+      <p>Judul</p>
+      <input id="title" type="text" class="swal2-input" value="${bookTarget.title}"  required>
+      <p>Penulis</p>
+      <input id="author" type="text" class="swal2-input" value="${bookTarget.author}" required>
+      <p>Tahun</p>
+      <input id="year" type="number" class="swal2-input" value="${bookTarget.year}" required>
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      return [
+        document.getElementById("title").value,
+        document.getElementById("author").value,
+        document.getElementById("year").value,
+      ];
+    }
+  });
+  if (formValues) {
+    bookTarget.title = formValues[0];
+    bookTarget.author = formValues[1];
+    bookTarget.year = formValues[2];
+    document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
+  }
+}
+
+
 
 function loadDataFromStorage() {
   const serializedData = localStorage.getItem(STORAGE_KEY);
@@ -156,8 +234,8 @@ function loadDataFromStorage() {
   document.dispatchEvent(new Event(RENDER_EVENT));
 }
 
-function bookSearch(keyword){
-  if (!keyword){
+function bookSearch(keyword) {
+  if (!keyword) {
     filteredBookshelf = books;
     return
   }

@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://requirejs.org/docs/release/2.3.5/minified/require.js"></script>
 </head>
 <body>
 <header class="head_bar">
@@ -18,7 +20,7 @@
 <main>
   <section class="input_section">
     <h2>Masukkan Buku Baru</h2>
-    <form id="inputBook" autocomplete="off">
+    <form id="inputBook">
       <div class="input">
         <label for="inputBookTitle">Judul</label>
         <input id="inputBookTitle" type="text" required>
@@ -41,7 +43,7 @@
   
   <section class="search_section">
     <h2>Cari Buku (Opsional)</h2>
-    <form id="searchBook" autocomplete="off">
+    <form id="searchBook">
       <label for="searchBookTitle">Judul</label>
       <input id="searchBookTitle" type="text">
       <button id="searchSubmit" type="submit">Cari</button>
