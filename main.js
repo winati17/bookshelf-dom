@@ -1,11 +1,6 @@
 /**
  * [
  *    {
- *  *   id: <int>
- *      task: <string>
- *      timestamp: <string>
- *      isCompleted: <boolean>
- * 
  *      id: string | number,
  *      title: string,
  *      author: string,
@@ -16,6 +11,7 @@
  */
 
 const books = [];
+let filteredBookshelf = [];
 const RENDER_EVENT = 'render-book';
 const SAVED_EVENT = 'saved-book';
 const STORAGE_KEY = 'BOOK_APPS';
@@ -50,24 +46,6 @@ function generateBookObject(id, title, author, year, isComplete) {
   }
 }
 
-function findBook(bookId) {
-  for (const bookItem of books) {
-    if (bookItem.id === bookId) {
-      return bookItem;
-    }
-  }
-  return null;
-}
-
-function findBookIndex(bookId) {
-  for (const index in books) {
-    if (books[index].id === bookId) {
-      return index;
-    }
-  }
-  return -1;
-}
-
 function makeBook(bookObject) {
   const { id, title, author, year, isComplete } = bookObject;
 
@@ -83,6 +61,7 @@ function makeBook(bookObject) {
   const textContainer = document.createElement('article');
   textContainer.classList.add('book_item');
   textContainer.append(textTitle, textAuthor, textYear);
+  textContainer.setAttribute('id', `todo-${id}`);
 
   const container = document.createElement('div');
   container.classList.add('action');
@@ -93,17 +72,17 @@ function makeBook(bookObject) {
     uncompleteButton.classList.add('green');
     uncompleteButton.innerText = "Belum selesai di Baca";
     uncompleteButton.addEventListener('click', function () {
-      undoBookFromCompleted(id);
+      addBookToUncompleted(id);
     });
 
     const trashButton = document.createElement('button');
     trashButton.classList.add('red');
     trashButton.innerText = "Hapus buku";
     trashButton.addEventListener('click', function () {
-      removeBookFromCompleted(id);
+      removeBook(id);
     });
-
     container.append(uncompleteButton, trashButton);
+
   } else {
     const completeButton = document.createElement('button');
     completeButton.classList.add('green');
@@ -116,7 +95,7 @@ function makeBook(bookObject) {
     trashButton.classList.add('red');
     trashButton.innerText = "Hapus buku";
     trashButton.addEventListener('click', function () {
-      removeBookFromCompleted(id);
+      removeBook(id);
     });
     container.append(completeButton, trashButton);
   }
@@ -131,14 +110,14 @@ function addBook() {
 
   const generatedID = generateId();
   const bookObject = generateBookObject(generatedID, title, author, year, isComplete)
-  books.push(bookObject);
+  books.unshift(bookObject);
   document.dispatchEvent(new Event(RENDER_EVENT));
   saveData();
 }
 
-function addBookToCompleted(bookId /* HTMLELement */) {
-  const bookTarget = findBook(bookId);
-  if (bookTarget == null) return;
+function addBookToCompleted(bookId) {
+  const bookTarget = books.find((book) => book.id === bookId);
+  if (!bookTarget) return;
 
   bookTarget.isComplete = true;
   document.dispatchEvent(new Event(RENDER_EVENT));
@@ -146,9 +125,8 @@ function addBookToCompleted(bookId /* HTMLELement */) {
   saveData();
 }
 
-function removeBookFromCompleted(bookId /* HTMLELement */) {
-  const bookTarget = findBookIndex(bookId);
-
+function removeBook(bookId) {
+  const bookTarget = books.findIndex((book) => book.id === bookId);
   if (bookTarget === -1) return;
 
   books.splice(bookTarget, 1);
@@ -156,10 +134,9 @@ function removeBookFromCompleted(bookId /* HTMLELement */) {
   saveData();
 }
 
-function undoBookFromCompleted(bookId /* HTMLELement */) {
-  const bookTarget = findBook(bookId);
-
-  if (bookTarget == null) return;
+function addBookToUncompleted(bookId) {
+  const bookTarget = books.find((book) => book.id === bookId);
+  if (!bookTarget) return;
 
   bookTarget.isComplete = false;
   document.dispatchEvent(new Event(RENDER_EVENT));
@@ -179,24 +156,25 @@ function loadDataFromStorage() {
   document.dispatchEvent(new Event(RENDER_EVENT));
 }
 
-function searchBook() {
-  var input, filter, ul, li, a, i, txtValue;
-  input = document.getElementById("searchBook");
-  filter = input.value.toUpperCase();
-  ul = document.getElementById("book_item");
-  li = ul.getElementsByTagName("h3");
-  for (i = 0; i < li.length; i++) {
-      a = li[i].getElementsByTagName("h3")[0];
-      txtValue = a.textContent || a.innerText;
-      if (txtValue.toUpperCase().indexOf(filter) > -1) {
-          li[i].style.display = "";
-      } else {
-          li[i].style.display = "none";
-      }
+function bookSearch(keyword){
+  if (!keyword){
+    filteredBookshelf = books;
+    return
   }
+  const filter = keyword.toUpperCase();
+  filteredBookshelf = books.filter((book) => {
+    return book.title.toUpperCase().includes(filter)
+  });
+  console.log(filteredBookshelf);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  bookSearch();
+
+  if (isStorageExist()) {
+    loadDataFromStorage();
+  }
+
   const checkBox = document.getElementById('inputBookIsComplete');
   const booktype = document.getElementById('BookType');
   checkBox.addEventListener('change', function (event) {
@@ -207,14 +185,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  const submitForm /* HTMLFormElement */ = document.getElementById('inputBook');
+  const submitForm = document.getElementById('inputBook');
   submitForm.addEventListener('submit', function (event) {
     event.preventDefault();
     addBook();
+    document.getElementById("inputBook").reset();
   });
-  if (isStorageExist()) {
-    loadDataFromStorage();
-  }
+
+  const searchSubmit = document.getElementById('searchBook');
+  searchSubmit.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const inputSearch = document.getElementById("searchBookTitle").value;
+    console.log(inputSearch);
+    bookSearch(inputSearch);
+    document.dispatchEvent(new Event(RENDER_EVENT));
+  });
 });
 
 
@@ -222,11 +207,10 @@ document.addEventListener(RENDER_EVENT, function () {
   const listUncompleted = document.getElementById('incompleteBookshelfList');
   const listCompleted = document.getElementById('completeBookshelfList');
 
-  // clearing list item
   listUncompleted.innerHTML = '';
   listCompleted.innerHTML = '';
 
-  for (const bookItem of books) {
+  for (const bookItem of filteredBookshelf) {
     const bookElement = makeBook(bookItem);
     if (bookItem.isComplete) {
       listCompleted.append(bookElement);
@@ -239,4 +223,3 @@ document.addEventListener(RENDER_EVENT, function () {
 document.addEventListener(SAVED_EVENT, function () {
   console.log(localStorage.getItem(STORAGE_KEY));
 });
-
