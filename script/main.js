@@ -37,7 +37,8 @@ function generateBookObject(id, title, author, year, isComplete) {
 function addBook() {
   const title = document.getElementById('inputBookTitle').value;
   const author = document.getElementById('inputBookAuthor').value;
-  const year = document.getElementById('inputBookYear').value;
+  let year = document.getElementById('inputBookYear').value;
+  year = parseInt(year);
   const isComplete = document.getElementById('inputBookIsComplete').checked;
 
   const generatedID = generateId();
@@ -260,16 +261,6 @@ document.addEventListener('DOMContentLoaded', function () {
   if (isStorageExist()) {
     loadDataFromStorage();
   }
-
-  const checkBox = document.getElementById('inputBookIsComplete');
-  const booktype = document.getElementById('BookType');
-  checkBox.addEventListener('change', function (event) {
-    if (checkBox.checked == true) {
-      booktype.innerText = "Selesai dibaca";
-    } else {
-      booktype.innerText = "Belum selesai dibaca";
-    }
-  });
 
   const submitForm = document.getElementById('inputBook');
   submitForm.addEventListener('submit', function (event) {
