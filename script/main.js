@@ -1,23 +1,10 @@
-/**
- * [
- *    {
- *      id: string | number,
- *      title: string,
- *      author: string,
- *      year: number,
- *      isComplete: boolean,
- *    }
- * ]
- */
-
-
 const books = [];
 let filteredBookshelf = [];
 const RENDER_EVENT = 'render-book';
 const SAVED_EVENT = 'saved-book';
 const STORAGE_KEY = 'BOOK_APPS';
 
-function isStorageExist() /* boolean */ {
+function isStorageExist() {
   if (typeof (Storage) === undefined) {
     alert('Browser kamu tidak mendukung local storage');
     return false;
@@ -47,78 +34,6 @@ function generateBookObject(id, title, author, year, isComplete) {
   }
 }
 
-function makeBook(bookObject) {
-  const { id, title, author, year, isComplete } = bookObject;
-
-  const textTitle = document.createElement('h3');
-  textTitle.innerText = title;
-
-  const textAuthor = document.createElement('p');
-  textAuthor.innerText = "Penulis: " + author;
-
-  const textYear = document.createElement('p');
-  textYear.innerText = "Tahun: " + year;
-
-  const textContainer = document.createElement('article');
-  textContainer.classList.add('book_item');
-  textContainer.append(textTitle, textAuthor, textYear);
-  textContainer.setAttribute('id', `todo-${id}`);
-
-  const container = document.createElement('div');
-  container.classList.add('action');
-  textContainer.append(container);
-
-  if (isComplete) {
-    const uncompleteButton = document.createElement('button');
-    uncompleteButton.classList.add('green');
-    uncompleteButton.innerText = "Belum selesai di Baca";
-    uncompleteButton.addEventListener('click', function () {
-      addBookToUncompleted(id);
-    });
-
-    const trashButton = document.createElement('button');
-    trashButton.classList.add('red');
-    trashButton.innerText = "Hapus buku";
-    trashButton.addEventListener('click', function () {
-      addRemoveAlert(id, title);
-    });
-
-    const editButton = document.createElement('button');
-    editButton.classList.add('edit');
-    editButton.innerText = "Edit buku";
-    editButton.addEventListener('click', function () {
-      addEditAlert(id);
-    });
-
-    container.append(uncompleteButton, trashButton, editButton);
-
-  } else {
-    const completeButton = document.createElement('button');
-    completeButton.classList.add('green');
-    completeButton.innerText = "Selesai dibaca";
-    completeButton.addEventListener('click', function () {
-      addBookToCompleted(id);
-    });
-
-    const trashButton = document.createElement('button');
-    trashButton.classList.add('red');
-    trashButton.innerText = "Hapus buku";
-    trashButton.addEventListener('click', function () {
-      addRemoveAlert(id, title);
-    });
-
-    const editButton = document.createElement('button');
-    editButton.classList.add('edit');
-    editButton.innerText = "Edit buku";
-    editButton.addEventListener('click', function () {
-      addEditAlert(id);
-    });
-
-    container.append(completeButton, trashButton, editButton);
-  }
-  return textContainer;
-}
-
 function addBook() {
   const title = document.getElementById('inputBookTitle').value;
   const author = document.getElementById('inputBookAuthor').value;
@@ -132,31 +47,95 @@ function addBook() {
   saveData();
 }
 
-function addBookToCompleted(bookId) {
-  const bookTarget = books.find((book) => book.id === bookId);
-  if (!bookTarget) return;
+function makeBook(bookObject) {
+  const { id, title, author, year, isComplete } = bookObject;
 
-  bookTarget.isComplete = true;
-  document.dispatchEvent(new Event(RENDER_EVENT));
-  saveData();
+  const book = document.createElement("article");
+  book.setAttribute("id", id);
+  book.classList.add("card", "my-3");
+
+  const bookTitle = document.createElement("h5");
+  bookTitle.classList.add("text-truncate");
+  bookTitle.style.maxWidth = "200px";
+  bookTitle.innerText = title;
+
+  const bookAuthor = document.createElement("span");
+  bookAuthor.classList.add("text-truncate", "d-inline-block");
+  bookAuthor.style.maxWidth = "200px";
+  bookAuthor.innerText = "Penulis: " + author;
+
+  const bookYear = document.createElement("span");
+  bookYear.innerText = "Tahun: " + year;
+
+  const br = document.createElement("br");
+
+  const cardContainer = document.createElement("div");
+  cardContainer.classList.add("card-body", "border-start", "border-4", "border-primary", "d-flex", "justify-content-between");
+
+  const cardContent = document.createElement("div");
+  cardContent.classList.add("card-content");
+
+  const cardAction = addAction(isComplete, id, title);
+
+  cardContent.append(bookTitle, bookAuthor, br, bookYear);
+  cardContainer.append(cardContent);
+  cardContainer.append(cardAction);
+  book.append(cardContainer);
+
+  return book;
 }
 
-function addBookToUncompleted(bookId) {
-  const bookTarget = books.find((book) => book.id === bookId);
-  if (!bookTarget) return;
+function addAction(isComplete, id, title) {
+  const cardActions = document.createElement("div");
 
-  bookTarget.isComplete = false;
-  document.dispatchEvent(new Event(RENDER_EVENT));
-  saveData();
+  const actionDelete = createActionDelete(id, title);
+  cardActions.append(actionDelete);
+
+  if (!isComplete) {
+    const actionToCompleted = createActionToCompleted(id);
+    cardActions.append(actionToCompleted);
+  } else {
+    const actionToUncompleted = createActionToUncompleted(id);
+    cardActions.append(actionToUncompleted);
+  }
+
+  const editButton = createEditButton(id);
+  cardActions.append(editButton);
+  return cardActions;
 }
 
-function removeBook(bookId) {
-  const bookTarget = books.findIndex((book) => book.id === bookId);
-  if (bookTarget === -1) return;
+function createActionToCompleted(idBook) {
+  const action = document.createElement("button");
+  action.classList.add("btn", "btn-sm", "btn-outline-warning");
+  action.innerHTML = '<i class="bi bi-check"></i>';
 
-  books.splice(bookTarget, 1);
-  document.dispatchEvent(new Event(RENDER_EVENT));
-  saveData();
+  action.addEventListener("click", function () {
+    const bookTarget = books.find((book) => book.id === idBook);
+    if (!bookTarget) return;
+
+    bookTarget.isComplete = true;
+    document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
+  })
+
+  return action;
+}
+
+function createActionToUncompleted(bookId) {
+  const action = document.createElement("button");
+  action.classList.add("btn", "btn-sm", "btn-outline-warning");
+  action.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+
+  action.addEventListener("click", function () {
+    const bookTarget = books.find((book) => book.id === bookId);
+    if (!bookTarget) return;
+
+    bookTarget.isComplete = false;
+    document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
+  })
+
+  return action;
 }
 
 function addRemoveAlert(id, title) {
@@ -183,7 +162,38 @@ function addRemoveAlert(id, title) {
   });
 }
 
-//Rawan XSS Attack, perlu di sanitize in the future
+function removeBook(bookId) {
+  const bookTarget = books.findIndex((book) => book.id === bookId);
+  if (bookTarget === -1) return;
+
+  books.splice(bookTarget, 1);
+  document.dispatchEvent(new Event(RENDER_EVENT));
+  saveData();
+}
+
+function createActionDelete(id, title) {
+  const actionDelete = document.createElement("button");
+  actionDelete.classList.add("btn", "btn-sm", "btn-outline-danger", "mx-1");
+  actionDelete.innerHTML = '<i class="bi bi-x"></i>';
+
+  actionDelete.addEventListener("click", function () {
+    addRemoveAlert(id, title);
+  });
+
+  return actionDelete;
+}
+
+function createEditButton(id){
+  const editButton = document.createElement('button');
+  editButton.classList.add("btn", "btn-sm", "btn-outline-secondary", "mx-1");
+  editButton.innerHTML = '<i class="bi bi-pencil-square"></i>';
+  editButton.addEventListener('click', function () {
+    addEditAlert(id);
+  });
+
+  return editButton;
+}
+
 async function addEditAlert(id) {
   const bookTarget = books.find((book) => book.id === id);
   const { value: formValues } = await Swal.fire({
@@ -218,8 +228,6 @@ async function addEditAlert(id) {
     saveData();
   }
 }
-
-
 
 function loadDataFromStorage() {
   const serializedData = localStorage.getItem(STORAGE_KEY);
